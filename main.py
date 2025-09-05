@@ -1,12 +1,6 @@
 import requests
 from bs4 import BeautifulSoup
-from sumy.parsers.plaintext import PlaintextParser
-from sumy.nlp.tokenizers import Tokenizer
-from sumy.summarizers.lsa import LsaSummarizer
-from sumy.nlp.stemmers import Stemmer
-from sumy.utils import get_stop_words
-import nltk
-nltk.download('punkt_tab')
+from transformers import pipeline
 
 wiki_link = None
 
@@ -31,16 +25,14 @@ def fetch_wiki_content():
     
 def parse_wiki_content(html_content):
     soup = BeautifulSoup(html_content, 'html.parser')
-    elements = soup.find_all(['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p'])
+    elements = soup.find_all(['p'])
     text = "\n".join([el.get_text() for el in elements])
     return text
 
-def summarize_text(text, num_sentences=3):
-    parser = PlaintextParser.from_string(text, Tokenizer("english"))
-    summarizer = LsaSummarizer(Stemmer("english"))
-    summarizer.stop_words = get_stop_words("english")
-
-    summary = summarizer(parser.document, num_sentences)
+def summarize_text(text, max_length=130, min_length=30):
+    summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
+    text = text[:1024]
+    summary = summarizer(text, max_length=max_length, min_length=min_length, do_sample=False)
     return summary
 
 if __name__ == "__main__":
@@ -48,5 +40,5 @@ if __name__ == "__main__":
     print(f"The wiki link is: {wiki_link}")
     text = fetch_wiki_content()
     text = parse_wiki_content(text)
-    summary = summarize_text(text, 3)
+    summary = summarize_text(text, 130, 30)
     print(summary)
