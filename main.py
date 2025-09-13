@@ -29,16 +29,24 @@ def parse_wiki_content(html_content):
     text = "\n".join([el.get_text() for el in elements])
     return text
 
+def chunk_text(text, chunk_size=400):
+    words = text.split()
+    for i in range(0, len(words), chunk_size):
+        yield ' '.join(words[i:i + chunk_size])
+
 def summarize_text(text, max_length=130, min_length=30):
     summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
-    text = text[:1024]
-    summary = summarizer(text, max_length=max_length, min_length=min_length, do_sample=False)
-    return summary
+    chunks = chunk_text(text, 400)
+    summaries = []
+    for chunk in chunks:
+        summary = summarizer(chunk, max_length=max_length, min_length=min_length, do_sample=False)
+        summaries.append(summary[0]['summary_text'])
+    return " ".join(summaries)
 
 if __name__ == "__main__":
     set_wiki_link(input("Enter the wiki link: "))
     print(f"The wiki link is: {wiki_link}")
     text = fetch_wiki_content()
     text = parse_wiki_content(text)
-    summary = summarize_text(text, 130, 30)
+    summary = summarize_text(text, 52, 30)
     print(summary)
